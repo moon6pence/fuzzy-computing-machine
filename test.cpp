@@ -11,14 +11,27 @@
 
 using namespace std;
 
-const int N = 100;
+const int N = 10;
 const int WIDTH = 1024, HEIGHT = 1024;
+
+void process(float *A, float *B, float *C, int WIDTH, int HEIGHT)
+{
+    for (int y = 0; y < HEIGHT; y++)
+        for (int x = 0; x < WIDTH; x++)
+        {
+            float a = A[y * HEIGHT + x];
+            float b = B[y * HEIGHT + x];
+
+            C[y * HEIGHT + x] = sqrt(a * a + b * b);
+        }
+}
 
 int main()
 {
     puts("Hello World!");
 
-    int fd = open("input.dat", O_RDONLY);
+    //int fd = open("input.dat", O_RDONLY);
+    int fd = open("network/input.dat", O_RDONLY);
     if (fd == -1)
     {
         puts("Cannot read input.dat");
@@ -28,6 +41,11 @@ int main()
     float *A = new float[WIDTH * HEIGHT];
     float *B = new float[WIDTH * HEIGHT];
     float *C = new float[WIDTH * HEIGHT];
+
+    // generate b
+    for (int y = 0; y < HEIGHT; y++)
+        for (int x = 0; x < WIDTH; x++)
+            B[y * HEIGHT + x] = (float)rand();
 
     Timer t0("all");
 
@@ -42,20 +60,15 @@ int main()
 
         Timer t2("process");
 
-        // generate b
-        for (int y = 0; y < HEIGHT; y++)
-            for (int x = 0; x < WIDTH; x++)
-                B[y * HEIGHT + x] = (float)rand();
-
         // process
-        for (int y = 0; y < HEIGHT; y++)
-            for (int x = 0; x < WIDTH; x++)
-            {
-                float a = A[y * HEIGHT + x];
-                float b = B[y * HEIGHT + x];
+        process(A, B, C, WIDTH, HEIGHT);
 
-                C[y * HEIGHT + x] = sqrt(a * a + b * b);
-            }
+        for (int i = 0; i < 20; i++)
+            process(B, C, C, WIDTH, HEIGHT);
+
+        // for (int y = 0; y < HEIGHT; y++)
+        //     for (int x = 0; x < WIDTH; x++)
+        //         C[y * WIDTH + x] = A[y * WIDTH + x] + B[y * WIDTH + x];
 
         t2.print();
     }
