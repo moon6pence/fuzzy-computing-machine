@@ -59,7 +59,7 @@ inline std::string Timer::format(double sec)
         // show in us
         return (boost::format("%0.0f us") % (d * 1000000.0)).str();
     }
-    if (d < 0.1)
+    if (d < 1.0)
     {
         // show in ms
         return (boost::format("%0.0f ms") % (d * 1000.0)).str();
