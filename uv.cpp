@@ -22,6 +22,8 @@ uv_work_t process_req;
 static float buffer[WIDTH * HEIGHT];
 static uv_buf_t iov;
 
+static float B[WIDTH * HEIGHT], C[WIDTH * HEIGHT];
+
 void on_open(uv_fs_t *req);
 void on_read(uv_fs_t *req); 
 void process(uv_work_t *req);
@@ -67,7 +69,7 @@ void on_read(uv_fs_t *req)
         if (info->count < N)
         {
             // process
-            process_req.data = info;
+            process_req.data = info->buffer->base;
             uv_queue_work(uv_default_loop(), &process_req, process, after_process);
 
             // read next block
@@ -84,11 +86,29 @@ void on_read(uv_fs_t *req)
     }
 }
 
+void process(float *A, float *B, float *C, int WIDTH, int HEIGHT)
+{
+    for (int y = 0; y < HEIGHT; y++)
+        for (int x = 0; x < WIDTH; x++)
+        {
+            float a = A[y * HEIGHT + x];
+            float b = B[y * HEIGHT + x];
+
+            C[y * HEIGHT + x] = sqrt(a * a + b * b);
+        }
+}
+
 void process(uv_work_t *req) 
 {
-    data_info *info = (data_info *)req->data;
+    puts("process()");
 
-    printf("process() count:%d\n", info->count);
+    float *A = (float *)req->data;
+
+    // process
+    process(A, B, C, WIDTH, HEIGHT);
+
+    for (int i = 0; i < 10; i++)
+        process(B, C, C, WIDTH, HEIGHT);
 }
 
 void after_process(uv_work_t *req, int status) 
@@ -99,6 +119,11 @@ void after_process(uv_work_t *req, int status)
 int main() 
 {
     puts("Hello libuv!");
+
+    // generate b
+    for (int y = 0; y < HEIGHT; y++)
+        for (int x = 0; x < WIDTH; x++)
+            B[y * HEIGHT + x] = (float)rand();
 
     // open file
     uv_fs_open(uv_default_loop(), &open_req, "network/input.dat", O_RDONLY, 0, on_open);

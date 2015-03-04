@@ -63,7 +63,7 @@ int main()
         // process
         process(A, B, C, WIDTH, HEIGHT);
 
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 10; i++)
             process(B, C, C, WIDTH, HEIGHT);
 
         // for (int y = 0; y < HEIGHT; y++)
