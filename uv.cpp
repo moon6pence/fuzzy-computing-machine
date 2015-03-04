@@ -11,13 +11,40 @@ const int WIDTH = 1024, HEIGHT = 1024;
 uv_fs_t open_req;
 uv_fs_t read_req;
 
-struct read_info
+struct data_info
 {
     int count;
+    uv_buf_t *buffer;
 };
+
+uv_work_t process_req;
 
 static float buffer[WIDTH * HEIGHT];
 static uv_buf_t iov;
+
+void on_open(uv_fs_t *req);
+void on_read(uv_fs_t *req); 
+void process(uv_work_t *req);
+void after_process(uv_work_t *req, int status);
+
+void on_open(uv_fs_t *req) 
+{
+    if (req->result >= 0) 
+    {
+        iov = uv_buf_init((char *)buffer, sizeof(buffer));
+
+        data_info *info = new data_info;
+        info->count = 0;
+        info->buffer = &iov;
+        read_req.data = info;
+
+        uv_fs_read(uv_default_loop(), &read_req, req->result, &iov, 1, -1, on_read);
+    }
+    else 
+    {
+        fprintf(stderr, "error opening file: %s\n", uv_strerror((int)req->result));
+    }
+}
 
 void on_read(uv_fs_t *req) 
 {
@@ -34,14 +61,14 @@ void on_read(uv_fs_t *req)
     }
     else if (req->result > 0) 
     {
-        read_info *info = (read_info *)req->data;
-        printf("count:%d read: %ld\n", info->count, req->result);
+        data_info *info = (data_info *)req->data;
+        printf("on_read() count:%d read: %ld\n", info->count, req->result);
 
         if (info->count < N)
         {
-            // TODO: process
-            // iov.len = req->result;
-            // uv_fs_write(uv_default_loop(), &write_req, 1, &iov, 1, -1, on_write);
+            // process
+            process_req.data = info;
+            uv_queue_work(uv_default_loop(), &process_req, process, after_process);
 
             // read next block
             info->count++;
@@ -57,22 +84,16 @@ void on_read(uv_fs_t *req)
     }
 }
 
-void on_open(uv_fs_t *req) 
+void process(uv_work_t *req) 
 {
-    if (req->result >= 0) 
-    {
-        iov = uv_buf_init((char *)buffer, sizeof(buffer));
+    data_info *info = (data_info *)req->data;
 
-        read_info *info = new read_info;
-        info->count = 0;
-        read_req.data = info;
+    printf("process() count:%d\n", info->count);
+}
 
-        uv_fs_read(uv_default_loop(), &read_req, req->result, &iov, 1, -1, on_read);
-    }
-    else 
-    {
-        fprintf(stderr, "error opening file: %s\n", uv_strerror((int)req->result));
-    }
+void after_process(uv_work_t *req, int status) 
+{
+    puts("after_process()");
 }
 
 int main() 
